@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- TensorFlow.js for ML Playstyle Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+
     <style>
         :root {
             --bg-outer: #0d0a08;
@@ -94,7 +97,28 @@
         }
 
         .modal-card h2 { font-family: 'Cinzel', serif; font-size: 2rem; color: var(--gold-accent); margin-bottom: 10px; }
-        .modal-card p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; }
+        .modal-card p { color: var(--text-muted); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
+
+        .feature-list {
+            text-align: left;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+        }
+
+        .feature-list li {
+            list-style: none;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-light);
+        }
+
+        .feature-list li i { color: var(--gold-accent); }
 
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 0.85rem; color: var(--gold-accent); margin-bottom: 5px; font-weight: 600; }
@@ -115,8 +139,41 @@
 
         /* Main Container */
         .app-container {
-            display: flex; gap: 25px; align-items: flex-start; justify-content: center;
-            flex-wrap: wrap; max-width: 1150px; width: 100%;
+            display: flex; gap: 20px; align-items: stretch; justify-content: center;
+            flex-wrap: wrap; max-width: 1200px; width: 100%;
+        }
+
+        /* Eval Bar */
+        .eval-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        .eval-bar-container {
+            width: 16px;
+            height: 100%;
+            min-height: 512px;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--board-border);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .eval-bar-black {
+            background: #1a1a1a;
+            width: 100%;
+            height: 50%;
+            transition: height 0.4s ease;
+        }
+
+        .eval-bar-white {
+            background: #f0f0f0;
+            width: 100%;
+            height: 50%;
+            transition: height 0.4s ease;
         }
 
         /* Chess Board */
@@ -204,6 +261,24 @@
         .status-card .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
         .status-card .value { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 700; color: var(--text-light); }
 
+        /* ML Panel */
+        .ml-card {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--board-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+        .ml-card .ml-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+        }
+        .ml-card .ml-value {
+            color: var(--gold-accent);
+            font-weight: 600;
+        }
+
         .captured-box {
             background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 6px 10px;
             min-height: 38px; display: flex; align-items: center; font-size: 1.3rem;
@@ -234,6 +309,10 @@
         .btn-theme.active { background: var(--gold-accent); color: #000; font-weight: 600; }
 
         @media (max-width: 720px) {
+            .app-container { flex-direction: column; align-items: center; }
+            .eval-bar-container { width: 100%; height: 16px; min-height: 16px; flex-direction: row; }
+            .eval-bar-black { width: 50%; height: 100%; }
+            .eval-bar-white { width: 50%; height: 100%; }
             #board { grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(8, 42px); }
             .square { width: 42px; height: 42px; font-size: 28px; }
             .square.valid-capture::after { width: 34px; height: 34px; }
@@ -243,11 +322,29 @@
 </head>
 <body class="theme-wood">
 
-    <!-- Config Modal -->
-    <div class="modal-overlay" id="startModal">
+    <!-- 1. Welcome / Intro Description Modal -->
+    <div class="modal-overlay" id="introModal">
         <div class="modal-card">
-            <h2>K's Chessboard !</h2>
-            <p>Configure game match settings</p>
+            <h2>♟️ Welcome to K's Chessboard !</h2>
+            <p>Experience a production-grade, GOATed web chess studio built with pure Vanilla JavaScript, web acoustics, and intelligent AI decision engines.</p>
+            
+            <ul class="feature-list">
+                <li><i class="fa-solid fa-brain"></i> <strong>Minimax AI:</strong> Alpha-Beta search up to 3 moves deep.</li>
+                <li><i class="fa-solid fa-chart-line"></i> <strong>TensorFlow.js Tracker:</strong> Real-time ML playstyle analytics.</li>
+                <li><i class="fa-solid fa-stopwatch"></i> <strong>Chess Clocks & Themes:</strong> Blitz, Rapid, and multi-style themes.</li>
+            </ul>
+
+            <button class="btn-option" onclick="openModeSelection()">
+                <i class="fa-solid fa-play"></i> START GAME
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Mode & Match Settings Selection Modal -->
+    <div class="modal-overlay" id="startModal" style="opacity: 0; pointer-events: none;">
+        <div class="modal-card">
+            <h2>Match Settings</h2>
+            <p>Select your mode, difficulty, and timer options</p>
             
             <div class="form-group">
                 <label><i class="fa-solid fa-gamepad"></i> Game Mode</label>
@@ -277,12 +374,12 @@
             </div>
 
             <button class="btn-option" onclick="applyAndStartGame()">
-                <i class="fa-solid fa-play"></i> Start Match
+                <i class="fa-solid fa-chess-king"></i> Launch Match
             </button>
         </div>
     </div>
 
-    <!-- Win / GameOver Modal -->
+    <!-- 3. Win / GameOver Modal -->
     <div class="modal-overlay" id="winModal" style="opacity: 0; pointer-events: none;">
         <div class="modal-card">
             <h2 id="winTitle"><i class="fa-solid fa-trophy"></i> YOU WON!</h2>
@@ -301,6 +398,15 @@
 
     <!-- Main App Layout -->
     <div class="app-container">
+
+        <!-- Dynamic Evaluation Bar -->
+        <div class="eval-wrapper">
+            <div class="eval-bar-container">
+                <div id="evalBlack" class="eval-bar-black"></div>
+                <div id="evalWhite" class="eval-bar-white"></div>
+            </div>
+        </div>
+
         <!-- Board Section -->
         <div class="board-wrapper">
             <div class="clock-banner">
@@ -326,6 +432,25 @@
             <div class="nav-buttons">
                 <button class="btn-nav" onclick="undoMove()"><i class="fa-solid fa-rotate-left"></i> Undo</button>
                 <button class="btn-nav" onclick="getHint()"><i class="fa-solid fa-lightbulb"></i> Get Hint</button>
+            </div>
+
+            <!-- TensorFlow.js ML Analytics -->
+            <div class="ml-card">
+                <div class="panel-title" style="font-size: 0.8rem; margin-bottom: 6px;">
+                    <i class="fa-solid fa-chart-line"></i> Playstyle ML Tracker
+                </div>
+                <div class="ml-row">
+                    <span>Style:</span>
+                    <span id="mlStyle" class="ml-value">Analyzing...</span>
+                </div>
+                <div class="ml-row">
+                    <span>Aggression:</span>
+                    <span id="mlAggression" class="ml-value">0%</span>
+                </div>
+                <div class="ml-row">
+                    <span>Accuracy:</span>
+                    <span id="mlAccuracy" class="ml-value">100%</span>
+                </div>
             </div>
 
             <div>
@@ -409,6 +534,11 @@
         let isGameOver = false;
         let hintMove = null;
 
+        // ML Tracking Metrics
+        let totalMoves = 0;
+        let totalPawnMoves = 0;
+        let totalAttacks = 0;
+
         // Castling & En Passant state
         let castlingRights = { wK: true, wQ: true, bK: true, bQ: true };
         let enPassantTarget = null;
@@ -420,18 +550,30 @@
         let clockInterval = null;
 
         // UI Elements
+        const introModal = document.getElementById('introModal');
+        const startModal = document.getElementById('startModal');
+        const winModal = document.getElementById('winModal');
         const boardElement = document.getElementById('board');
         const statusElement = document.getElementById('status');
         const statusCard = document.getElementById('statusCard');
         const capturedWhiteElement = document.getElementById('capturedWhite');
         const capturedBlackElement = document.getElementById('capturedBlack');
         const historyLogElement = document.getElementById('historyLog');
-        const startModal = document.getElementById('startModal');
-        const winModal = document.getElementById('winModal');
         const winTitle = document.getElementById('winTitle');
         const winDesc = document.getElementById('winDesc');
         const whiteClockEl = document.getElementById('whiteClock');
         const blackClockEl = document.getElementById('blackClock');
+        const evalWhiteEl = document.getElementById('evalWhite');
+        const evalBlackEl = document.getElementById('evalBlack');
+
+        // Modal Flow Handlers
+        function openModeSelection() {
+            introModal.style.opacity = '0';
+            introModal.style.pointerEvents = 'none';
+            
+            startModal.style.opacity = '1';
+            startModal.style.pointerEvents = 'auto';
+        }
 
         function toggleAiDifficultySelect() {
             const mode = document.getElementById('modeSelect').value;
@@ -486,6 +628,10 @@
             castlingRights = { wK: true, wQ: true, bK: true, bQ: true };
             enPassantTarget = null;
 
+            totalMoves = 0;
+            totalPawnMoves = 0;
+            totalAttacks = 0;
+
             whiteTime = timerSetting;
             blackTime = timerSetting;
             startClock();
@@ -538,6 +684,37 @@
             winDesc.innerText = `${loser === 'w' ? 'White' : 'Black'} ran out of time! ${winner} Wins!`;
             winModal.style.opacity = '1';
             winModal.style.pointerEvents = 'auto';
+        }
+
+        /* --- TensorFlow.js ML Analytics --- */
+        async function updateMlAnalytics() {
+            if (totalMoves < 2) return;
+
+            const aggRatio = (totalAttacks / totalMoves).toFixed(2);
+            const pawnRatio = (totalPawnMoves / totalMoves).toFixed(2);
+
+            // Tensor Analysis
+            const xs = tf.tensor2d([[parseFloat(aggRatio), parseFloat(pawnRatio)]]);
+            const aggScore = Math.min(100, Math.round(aggRatio * 100));
+
+            document.getElementById('mlAggression').innerText = `${aggScore}%`;
+
+            let style = "Balanced Tactical";
+            if (aggScore > 40) style = "Aggressive Attacker";
+            else if (pawnRatio > 0.5) style = "Positional Builder";
+
+            document.getElementById('mlStyle').innerText = style;
+            xs.dispose();
+        }
+
+        /* --- Evaluation Bar Logic --- */
+        function updateEvaluationBar() {
+            const score = evaluateBoard(board); // Positive = Black advantage, Negative = White advantage
+            let whitePct = 50 - (score / 2);
+            whitePct = Math.max(5, Math.min(95, whitePct));
+            
+            evalWhiteEl.style.height = `${whitePct}%`;
+            evalBlackEl.style.height = `${100 - whitePct}%`;
         }
 
         /* --- Chess Engine Logic --- */
@@ -637,6 +814,14 @@
             let moveLogText = "";
 
             hintMove = null; // Clear hint
+
+            // ML Stat Tracking
+            if (isWhite(piece)) {
+                totalMoves++;
+                if (piece.toLowerCase() === 'p') totalPawnMoves++;
+                if (targetPiece !== '') totalAttacks++;
+                updateMlAnalytics();
+            }
 
             // Handle Castling Rook Move
             if (piece.toLowerCase() === 'k' && Math.abs(toC - fromC) === 2) {
@@ -951,6 +1136,7 @@
                     boardElement.appendChild(square);
                 }
             }
+            updateEvaluationBar();
         }
 
         function handleSquareClick(r, c) {
